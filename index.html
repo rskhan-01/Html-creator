@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PASTE2HTML — Professional Code Exporter</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0f0e0c;
+    --paper: #f5f2ec;
+    --cream: #ede9e0;
+    --rule: #d4cfc4;
+    --amber: #e8a020;
+    --amber-dark: #c47a00;
+    --green: #2d6a4f;
+    --red: #c0392b;
+    --mono: 'IBM Plex Mono', monospace;
+    --display: 'Bebas Neue', sans-serif;
+    --body: 'DM Sans', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background-color: var(--paper);
+    background-image:
+      linear-gradient(var(--rule) 1px, transparent 1px),
+      linear-gradient(90deg, var(--rule) 1px, transparent 1px);
+    background-size: 28px 28px;
+    min-height: 100vh;
+    color: var(--ink);
+    font-family: var(--body);
+  }
+
+  .topbar {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 0 32px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .brand { font-family: var(--display); font-size: 1.6rem; letter-spacing: 0.08em; color: var(--amber); }
+  .brand span { color: var(--paper); }
+
+  .page {
+    max-width: 1200px; /* Wider for preview */
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+
+  .heading-block {
+    margin-bottom: 40px;
+    border-left: 4px solid var(--amber);
+    padding-left: 20px;
+  }
+
+  .heading-block h1 {
+    font-family: var(--display);
+    font-size: clamp(2.8rem, 6vw, 4.5rem);
+    line-height: 0.95;
+    color: var(--ink);
+  }
+
+  /* Split Screen Layout */
+  .app-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+
+  @media (max-width: 900px) {
+    .app-grid { grid-template-columns: 1fr; }
+  }
+
+  .card {
+    background: white;
+    border: 1.5px solid var(--rule);
+    box-shadow: 4px 4px 0 var(--ink);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .card-header {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 12px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .card-title { font-family: var(--display); color: var(--amber); letter-spacing: 0.1em; }
+
+  /* Editor Styling */
+  .editor-area { display: flex; border-bottom: 1.5px solid var(--rule); background: white; }
+  .line-col {
+    background: var(--cream);
+    padding: 18px 10px;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: #aaa;
+    text-align: right;
+    min-width: 46px;
+    border-right: 1.5px solid var(--rule);
+  }
+
+  #code-input {
+    flex: 1;
+    height: 450px;
+    border: none;
+    padding: 18px;
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    resize: none;
+    outline: none;
+  }
+
+  /* Preview Container */
+  .preview-wrap {
+    height: 100%;
+    min-height: 500px;
+    background: white;
+    position: sticky;
+    top: 76px;
+  }
+
+  iframe {
+    width: 100%;
+    height: 500px;
+    border: none;
+    background: white;
+  }
+
+  .filename-row {
+    padding: 12px 20px;
+    background: var(--cream);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1.5px solid var(--rule);
+  }
+
+  .filename-input-wrap {
+    display: flex;
+    border: 1.5px solid var(--rule);
+    background: white;
+  }
+
+  .filename-input-wrap input {
+    border: none;
+    padding: 5px 10px;
+    font-family: var(--mono);
+    outline: none;
+  }
+
+  .filename-ext { background: var(--ink); color: var(--amber); padding: 5px 10px; font-family: var(--mono); font-size: 0.8rem; }
+
+  .btn {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    padding: 7px 14px;
+    border: 1.5px solid var(--ink);
+    background: white;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+
+  .btn:hover { background: var(--ink); color: white; }
+  .btn-amber { background: var(--amber); box-shadow: 3px 3px 0 var(--amber-dark); font-weight: bold; margin-top: 20px; width: 100%; padding: 15px; font-size: 0.9rem; }
+
+  .stats { padding: 10px 20px; background: var(--ink); display: flex; gap: 20px; font-family: var(--mono); font-size: 0.65rem; color: #888; }
+  .stats b { color: var(--amber); }
+
+  .toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: var(--ink);
+    color: var(--amber);
+    padding: 10px 20px;
+    font-family: var(--mono);
+    border: 1px solid var(--amber);
+    display: none;
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">PASTE<span>2</span>HTML</div>
+  <div style="font-family: var(--mono); font-size: 0.7rem; color: #888;">LIVE_PREVIEW_MODE_ACTIVE</div>
+</div>
+
+<div class="page">
+  <div class="heading-block">
+    <h1>SOURCE TO SITE</h1>
+    <p>Real-time HTML editor and instant file downloader.</p>
+  </div>
+
+  <div class="app-grid">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">EDITOR</div>
+        <div style="display:flex; gap:5px;">
+          <button class="btn" onclick="pasteFromClipboard()">Paste</button>
+          <button class="btn" onclick="clearAll()">Clear</button>
+        </div>
+      </div>
+      
+      <div class="filename-row">
+        <span style="font-family: var(--mono); font-size: 0.7rem;">FILE:</span>
+        <div class="filename-input-wrap">
+          <input type="text" id="filename" value="index" placeholder="filename">
+          <div class="filename-ext">.html</div>
+        </div>
+      </div>
+
+      <div class="editor-area">
+        <div class="line-col" id="lines">1</div>
+        <textarea id="code-input" spellcheck="false" oninput="onEdit()" onscroll="syncLines()" onkeydown="handleKeys(event)" placeholder="Paste your HTML here..."></textarea>
+      </div>
+
+      <div class="stats">
+        <span>Chars: <b id="s-chars">0</b></span>
+        <span>Lines: <b id="s-lines">1</b></span>
+        <span>Size: <b id="s-size">0 B</b></span>
+      </div>
+
+      <button class="btn btn-amber" onclick="download()">DOWNLOAD .HTML FILE</button>
+    </div>
+
+    <div class="card preview-wrap">
+      <div class="card-header">
+        <div class="card-title">LIVE RENDER</div>
+        <div style="font-family: var(--mono); font-size: 0.6rem; color: #888;">AUTO_REFRESH: ON</div>
+      </div>
+      <iframe id="live-preview"></iframe>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+  const input = document.getElementById('code-input');
+  const linesEl = document.getElementById('lines');
+  const preview = document.getElementById('live-preview');
+
+  function onEdit() {
+    updateLines();
+    updateStats();
+    updatePreview();
+  }
+
+  function updateLines() {
+    const count = (input.value.match(/\n/g) || []).length + 1;
+    linesEl.textContent = Array.from({length: count}, (_, i) => i + 1).join('\n');
+  }
+
+  function syncLines() {
+    linesEl.scrollTop = input.scrollTop;
+  }
+
+  function updatePreview() {
+    const doc = preview.contentWindow.document;
+    doc.open();
+    doc.write(input.value || '<p style="font-family:sans-serif; color:#ccc; padding:20px;">Preview will appear here...</p>');
+    doc.close();
+  }
+
+  function updateStats() {
+    const v = input.value;
+    document.getElementById('s-chars').textContent = v.length.toLocaleString();
+    document.getElementById('s-lines').textContent = v.split('\n').length;
+    const bytes = new Blob([v]).size;
+    document.getElementById('s-size').textContent = bytes > 1024 ? (bytes/1024).toFixed(1) + ' KB' : bytes + ' B';
+  }
+
+  function handleKeys(e) {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const s = input.selectionStart;
+      input.value = input.value.substring(0, s) + '  ' + input.value.substring(input.selectionEnd);
+      input.selectionStart = input.selectionEnd = s + 2;
+      onEdit();
+    }
+  }
+
+  async function pasteFromClipboard() {
+    try {
+      const text = await navigator.clipboard.readText();
+      input.value = text;
+      onEdit();
+      showToast('Pasted!');
+    } catch (err) {
+      showToast('Clipboard error');
+    }
+  }
+
+  function clearAll() {
+    if (confirm('Clear editor?')) {
+      input.value = '';
+      onEdit();
+    }
+  }
+
+  function download() {
+    const code = input.value;
+    if (!code.trim()) return showToast('Editor is empty');
+    const name = (document.getElementById('filename').value.trim() || 'index') + '.html';
+    const blob = new Blob([code], { type: 'text/html' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    a.click();
+    showToast('Downloading...');
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.display = 'block';
+    setTimeout(() => t.style.display = 'none', 2000);
+  }
+
+  // Initial render
+  updatePreview();
+</script>
+</body>
+</html>
